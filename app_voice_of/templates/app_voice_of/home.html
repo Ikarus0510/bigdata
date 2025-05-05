@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container-fluid">
+
+  <div class="row">
+    <!-- 川普資訊卡 -->
+    <div class="col-lg-6 mb-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <h4 class="mb-0">{{ person_name }}聲量觀察</h4>
+          <small class="text-muted">{{ description }}</small>
+        </div>
+        <div class="card-body text-center p-4">
+          <img src="{% static 'img/trump.jpg' %}" width="500" class="shadow-sm mb-3" />
+          <h5 class="mb-2">總篇數：<strong>{{ num_occurrence }}</strong> 篇</h5>
+          <h5 class="mb-0">總次數：<strong>{{ num_frequency }}</strong> 次</h5>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分類長條圖 -->
+    <div class="col-lg-6 mb-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <h4 class="mb-0">依據新聞類別統計網路聲量</h4>
+          <small class="text-muted">在一段週期的新聞中被報導最多的是哪類？</small>
+        </div>
+        <div class="card-body">
+          <canvas id="bar_chart" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 每日新聞趨勢 -->
+  <div class="row">
+    <div class="col-lg-12 mb-4">
+      <div class="card">
+        <div class="card-header">
+          <h4 class="mb-0">依據時間顯示聲量的變化</h4>
+          <small class="text-muted">觀察每日新聞聲量變化趨勢</small>
+        </div>
+        <div class="card-body">
+          <canvas id="line_chart" height="max-height: 200px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js + moment.js -->
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+
+<script>
+  const freqByDate = JSON.parse('{{ freqByDate|safe|escapejs }}');
+  const freqByCate = JSON.parse('{{ freqByCate|safe|escapejs }}');
+  const categories = JSON.parse('{{ category|safe|escapejs }}');
+
+  // 長條圖：分類聲量
+  new Chart(document.getElementById('bar_chart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: categories,
+      datasets: [{
+        label: '新聞數量',
+        data: freqByCate,
+        backgroundColor: 'rgba(153, 102, 255, 0.5)',
+        borderColor: 'rgba(153, 102, 255, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        yAxes: [{
+          ticks: {
+            beginAtZero: true,
+            maxTicksLimit: 6
+          }
+        }]
+      }
+    }
+  });
+
+  // 折線圖：每日趨勢
+  new Chart(document.getElementById('line_chart').getContext('2d'), {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: '每日新聞聲量',
+        data: freqByDate,
+        borderColor: '#36a2eb',
+        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+        pointRadius: 3,
+        fill: true,
+        lineTension: 0.2
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        xAxes: [{
+          type: 'time',
+          time: {
+            unit: 'day',
+            tooltipFormat: 'YYYY-MM-DD',
+            displayFormats: {
+              day: 'MM/DD'
+            }
+          }
+        }],
+        yAxes: [{
+          ticks: {
+            beginAtZero: true,
+            maxTicksLimit: 6,
+            callback: function(value) {
+              return Number.isInteger(value) ? value : null;
+            }
+          }
+        }]
+      }
+    }
+  });
+</script>
+{% endblock %}

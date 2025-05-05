@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-3">多視角新聞彙整</h2>
+  <p class="text-muted">彙整來自不同媒體的相關新聞，幫助你快速掌握議題全貌</p>
+
+  <div class="row g-4">
+    <!-- 搜尋表單 -->
+    <div class="col-lg-5">
+      <div class="card border-primary rounded shadow-sm">
+        <div class="card-body">
+          <form id="news-form">
+            <div class="mb-3">
+              <label for="keyword" class="form-label">關鍵字</label>
+              <input type="text" class="form-control" id="keyword" name="keyword" value="川普" required>
+            </div>
+            <div class="mb-3">
+              <label for="days" class="form-label">時間範圍（天）</label>
+              <select class="form-select" id="days" name="days">
+                <option value="3" selected>近三天</option>
+                <option value="7">近七天</option>
+                <option value="30">近三十天</option>
+              </select>
+            </div>
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary">開始彙整</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 快速主題 -->
+    <div class="col-lg-7">
+      <div class="p-3 bg-light border rounded shadow-sm">
+        <h5>快速查看主題：</h5>
+        <div id="cluster-links" class="mt-2 d-flex flex-wrap gap-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分群結果呈現區 -->
+  <div class="mt-5" id="cluster_result"></div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script>
+  $("#news-form").submit(function (e) {
+    e.preventDefault();
+
+    const keyword = $("#keyword").val();
+    const days = $("#days").val();
+
+    if (!keyword) {
+      alert("請輸入關鍵字");
+      return;
+    }
+
+    $("#cluster_result").html("<p class='text-muted'>查詢中，請稍候...</p>");
+    $("#cluster-links").hide().empty();
+
+    $.ajax({
+      type: "POST",
+      url: "api_cluster_news/",
+      data: {
+        keyword: keyword,
+        days: days,
+      },
+      success: function (data) {
+        if (data.clusters.length === 0) {
+          $("#cluster_result").html("<div class='alert alert-warning'>找不到符合條件的新聞。</div>");
+          return;
+        }
+
+        let allHtml = "";
+        let shortcuts = "";
+
+        data.clusters.forEach((group, i) => {
+          shortcuts += `<button class="btn btn-outline-primary btn-sm me-2 mb-2" onclick="document.getElementById('cluster-${i}').scrollIntoView({ behavior: 'smooth' });">${group.cluster_title}</button>`;
+
+          let html = `
+            <div class="card mb-4 p-3 shadow-sm border-start border-primary border-4 rounded-3" id="cluster-${i}">
+              <div class="card-header bg-light text-center">
+                <div class="fw-bold fs-5 text-primary">${group.cluster_title}</div>
+                <div class="text-muted small">事件期間：${group.start_date} - ${group.end_date}｜首發媒體：${group.first_source}</div>
+              </div>
+              <div class="card-body">
+          `;
+
+          group.articles.forEach((article) => {
+            html += `
+              <div class="mb-3 pb-2 border-bottom">
+                <h6>
+                  <a href="${article.link}" target="_blank" rel="noopener noreferrer" class="text-dark fw-semibold">
+                    ${article.title}
+                  </a>
+                </h6>
+                <p class="text-muted mb-1">${article.source}｜${article.date}</p>
+                <p class="mb-2" style="line-height: 1.6">${article.summary}</p>
+                <div class="tag-list">
+                  ${article.tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('')}
+                </div>
+              </div>
+            `;
+          });
+
+          html += `</div></div>`;
+          allHtml += html;
+        });
+
+        $("#cluster_result").html(allHtml);
+        $("#cluster-links").html(shortcuts).show();
+      },
+      error: function () {
+        $("#cluster_result").html("<div class='alert alert-danger'>請求失敗，請檢查伺服器或參數。</div>");
+      }
+    });
+  });
+</script>
+{% endblock %}
