@@ -1,0 +1,7 @@
+# 避免洩漏金鑰與暫存檔案
+.env
+__pycache__/
+*.pyc
+*.sqlite3
+.DS_Store
+*.log

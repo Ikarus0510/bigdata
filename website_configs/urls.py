@@ -27,5 +27,7 @@ urlpatterns = [
 
     path('top_person_db/', include('app_top_person_db.urls')),
 
+    path('userkeyword_report/', include('app_user_keyword_llm_report.urls')),
+
 
 ]
